@@ -10,6 +10,7 @@
 .chunks span {
   color: #4caf50;
   font-weight: 700;
+  margin: 10px;
 }
 .form-container {
   max-width: 1200px;

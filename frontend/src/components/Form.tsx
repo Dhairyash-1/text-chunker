@@ -1,28 +1,38 @@
 import axios from "axios"
 import { useState, ChangeEvent, FormEvent } from "react"
 
+interface Chunk {
+  page_content: string
+  metadata: {
+    name: string
+  }
+  // Add other properties if needed
+}
+
 const Form: React.FC = () => {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [result, setResult] = useState([])
+  const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null)
+  const [result, setResult] = useState<Array<Array<Chunk>>>([])
 
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     e.preventDefault()
     const files = e.target.files
     if (files && files.length > 0) {
-      console.log(files[0])
-      setSelectedFile(files[0])
+      setSelectedFiles(files)
     }
   }
+
   async function handleUpload(e: FormEvent) {
     e.preventDefault()
-    if (!selectedFile) return
+    if (!selectedFiles) return
+
     const formData = new FormData()
-    formData.append("file", selectedFile)
-    console.log("formdata", formData)
+    for (let i = 0; i < selectedFiles.length; i++) {
+      formData.append("file", selectedFiles[i])
+    }
 
     try {
       const response = await axios.post(
-        `http://127.0.0.1:5000/api/uploadfile`,
+        `${import.meta.env.VITE_SERVER_URL}`,
         formData,
         {
           headers: {
@@ -31,11 +41,8 @@ const Form: React.FC = () => {
         }
       )
       console.log(response)
-      console.log(typeof response.data.chunks)
+
       setResult(response.data.chunks)
-      // if (response.status === 200) {
-      //   setResult(JSON.parse(response.data.chunks))
-      // }
     } catch (error) {
       console.log(`Error in uploading file ${error}`)
     }
@@ -47,7 +54,7 @@ const Form: React.FC = () => {
         <h1>Text Chunking</h1>
         <form method="post" onSubmit={handleUpload}>
           <label htmlFor="file-input" className="file-label">
-            Choose a file
+            Choose files
           </label>
           <input
             id="file-input"
@@ -55,15 +62,20 @@ const Form: React.FC = () => {
             name="file"
             accept="text/plain"
             onChange={handleFileChange}
+            multiple // Allow multiple file selection
           />
           <button className="upload-button">Upload</button>
         </form>
-        {result.map((doc, i) => (
-          <div key={i} className="chunks">
-            <p>{doc.page_content}</p>
-            <span>Length:-{doc.page_content.length}</span>
-          </div>
-        ))}
+        {result &&
+          result.map((arr) => {
+            return arr.map((doc, i) => (
+              <div key={i} className="chunks">
+                <p>{doc.page_content}</p>
+                <span>Length: {doc.page_content.length}</span>
+                <span>Filename: {doc.metadata.name}</span>
+              </div>
+            ))
+          })}
       </div>
     </>
   )

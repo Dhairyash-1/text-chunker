@@ -1,7 +1,9 @@
 import axios from "axios"
-import { useState, ChangeEvent, FormEvent } from "react"
+import { useState, ChangeEvent, FormEvent, useRef } from "react"
+import { v4 as uuidv4 } from "uuid"
 
 interface Chunk {
+  id: string
   page_content: string
   metadata: {
     name: string
@@ -11,7 +13,13 @@ interface Chunk {
 
 const Form: React.FC = () => {
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null)
-  const [result, setResult] = useState<Array<Array<Chunk>>>([])
+  const [result, setResult] = useState<Array<Chunk>>([])
+  const [currentId, setCurrentId] = useState<string | null>("")
+  const [saveChunks, setSaveChunks] = useState<Array<Chunk>>([])
+
+  // const flatChunks = result.flat()
+  // const chunks = flatChunks.map((doc) => ({ ...doc, id: uuidv4() }))
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     e.preventDefault()
@@ -41,11 +49,39 @@ const Form: React.FC = () => {
         }
       )
       console.log(response)
-
-      setResult(response.data.chunks)
+      if (response.status === 200) {
+        const flatChunks: [Chunk] = response.data.chunks.flat()
+        const ChunksWithId = flatChunks.map((chunk) => ({
+          ...chunk,
+          id: uuidv4(),
+        }))
+        setResult(ChunksWithId)
+      }
     } catch (error) {
       console.log(`Error in uploading file ${error}`)
     }
+  }
+  function handleEdit(id: string, newValue: string) {
+    const updatedChunks = result.map((chunk) =>
+      chunk.id === id ? { ...chunk, page_content: newValue } : chunk
+    )
+    setResult(updatedChunks)
+    // setCurrentId(null) // Reset id after saving changes
+  }
+  function handleDelete(id: string) {
+    const updated = result.filter((chunk) => chunk.id !== id)
+    setResult(updated)
+  }
+  console.log("updated", saveChunks)
+  const downloadChunks = () => {
+    const blob = new Blob([JSON.stringify(result, null, 2)], {
+      type: "application/json",
+    })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "chunks.json"
+    a.click()
   }
 
   return (
@@ -66,15 +102,54 @@ const Form: React.FC = () => {
           />
           <button className="upload-button">Upload</button>
         </form>
+        {result && (
+          <>
+            <button
+              disabled={!result.length}
+              className="download-button"
+              onClick={downloadChunks}
+            >
+              Download Updated Chunks
+            </button>
+            <span className="chunk-num">Toatal Chunks:-{result.length}</span>
+          </>
+        )}
         {result &&
-          result.map((arr) => {
-            return arr.map((doc, i) => (
+          result.map((doc, i) => {
+            return (
               <div key={i} className="chunks">
-                <p>{doc.page_content}</p>
-                <span>Length: {doc.page_content.length}</span>
-                <span>Filename: {doc.metadata.name}</span>
+                {doc.id === currentId ? (
+                  <textarea
+                    readOnly={!(doc.id === currentId)}
+                    value={doc.page_content.replace(/\n/g, " ")}
+                    onChange={(e) => handleEdit(doc.id, e.target.value)}
+                    ref={doc.id === currentId ? textareaRef : undefined}
+                  />
+                ) : (
+                  <p>{doc.page_content}</p>
+                )}
+                <div className="row2">
+                  <span>Length: {doc.page_content.length}</span>
+                  <div className="btns">
+                    {doc.id === currentId ? (
+                      <button onClick={() => setCurrentId(null)}>Save</button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setCurrentId(doc.id)
+                          if (textareaRef.current) {
+                            textareaRef.current.focus()
+                          }
+                        }}
+                      >
+                        Edit
+                      </button>
+                    )}
+                    <button onClick={() => handleDelete(doc.id)}>Delete</button>
+                  </div>
+                </div>
               </div>
-            ))
+            )
           })}
       </div>
     </>

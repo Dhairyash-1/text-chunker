@@ -67,12 +67,13 @@ textarea {
   resize: vertical; /* Allow vertical resizing only */
 }
 .chunks p {
-  font-size: 18px;
+  font-size: 20px;
 }
 
 span {
   display: block;
   margin-top: 5px;
+  font-size: 18px;
 }
 
 .btns button {

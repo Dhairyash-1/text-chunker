@@ -15,7 +15,6 @@ const Form: React.FC = () => {
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null)
   const [result, setResult] = useState<Array<Chunk>>([])
   const [currentId, setCurrentId] = useState<string | null>("")
-  const [saveChunks, setSaveChunks] = useState<Array<Chunk>>([])
 
   // const flatChunks = result.flat()
   // const chunks = flatChunks.map((doc) => ({ ...doc, id: uuidv4() }))
@@ -72,7 +71,7 @@ const Form: React.FC = () => {
     const updated = result.filter((chunk) => chunk.id !== id)
     setResult(updated)
   }
-  console.log("updated", saveChunks)
+
   const downloadChunks = () => {
     const blob = new Blob([JSON.stringify(result, null, 2)], {
       type: "application/json",
@@ -130,6 +129,7 @@ const Form: React.FC = () => {
                 )}
                 <div className="row2">
                   <span>Length: {doc.page_content.length}</span>
+                  <span>Filename: {doc.metadata.name}</span>
                   <div className="btns">
                     {doc.id === currentId ? (
                       <button onClick={() => setCurrentId(null)}>Save</button>

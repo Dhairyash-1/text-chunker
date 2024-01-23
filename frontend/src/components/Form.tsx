@@ -120,7 +120,7 @@ const Form: React.FC = () => {
                 {doc.id === currentId ? (
                   <textarea
                     readOnly={!(doc.id === currentId)}
-                    value={doc.page_content.replace(/\n/g, " ")}
+                    value={doc.page_content}
                     onChange={(e) => handleEdit(doc.id, e.target.value)}
                     ref={doc.id === currentId ? textareaRef : undefined}
                   />
